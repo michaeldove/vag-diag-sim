@@ -19,8 +19,8 @@ MY_CHANNEL_ADDRESS_DOUBLE = 0x740L
 
 KWP_READ_ECU_ID = 0x1a
 KWP_ECU_ID_VAG_NUMBER_3 = 0x9a
-KWP_ECU_ID_VAG_NUMBER_1 = 0x9b
-KWP_ECU_ID_VAG_NUMBER_2 = 0x91
+COMPONENT_ID= 0x9b
+ECU_ID = 0x91
 
 remote_arbitration_id = None
 controller = None
@@ -64,8 +64,8 @@ def channel_handler(message):
         req_seq = opcode & 0x0f
         if kwp_opcode == KWP_READ_ECU_ID:
             data = None
-            if ecu_id_type == KWP_ECU_ID_VAG_NUMBER_1:
-                data = [[0x00, 0x30, 0x5a, 0x9b, 0x38, 0x50, 0x30],
+            if ecu_id_type == COMPONENT_ID:
+                data = [[0x5a, COMPONENT_ID, 0x38, 0x50, 0x30],
                         [0x39, 0x30, 0x37, 0x31, 0x31, 0x35, 0x41],
                         [0x51, 0x20, 0x30, 0x30, 0x31, 0x30, 0x10],
                         [0x00, 0x00, 0x00, 0x01, 0xdc, 0x5a, 0x10],
@@ -73,13 +73,13 @@ def channel_handler(message):
                         [0x52, 0x34, 0x2f, 0x34, 0x56, 0x20, 0x54],
                         [0x46, 0x53, 0x49, 0x20, 0x20, 0x20, 0x20],
                         [0x20]]
-            elif ecu_id_type == KWP_ECU_ID_VAG_NUMBER_2:
-                #data = str_to_bytes("Underground")
-                data = [[0x00, 0x11, 0x5a, 0x91, 0x0e, 0x38, 0x50],
+            elif ecu_id_type == ECU_ID:
+                data = str_to_bytes("Underground")
+                data = [[0x5a, ECU_ID, 0x0e, 0x38, 0x50],
                         [0x30, 0x39, 0x30, 0x37, 0x31, 0x31, 0x35],
                         [0x42, 0x20, 0x20, 0x20, 0xff]]
             elif ecu_id_type == KWP_ECU_ID_VAG_NUMBER_3:
-                data = [[0x00, 0x17, 0x5a, 0x9a, 0x01, 0xdc, 0x5a],
+                data = [[0x5a, 0x9a, 0x01, 0xdc, 0x5a],
                         [0x10, 0x00, 0xbf, 0x30, 0x30, 0x31, 0x30],
                         [0x10, 0x09, 0x01, 0x03, 0x00, 0x0c, 0x18],
                         [0x0f, 0x01, 0x60, 0xff]]
@@ -101,10 +101,12 @@ def channel_handler(message):
                     sequence_code = 0x10
                 data_row = data[i]
                 if i == 0:
-                    data_row = [0x00, len(data)] + data_row
+                    flatten = lambda l: [item for sublist in l for item in sublist] 
+                    payload_length = len(flatten(data))
+                    data_row = [0x00, payload_length] + data_row
                 resp_opcode = sequence_code | kwp_resp_seq
                 msg = can.Message(arbitration_id=remote_arbitration_id,
-                                  data=[resp_opcode] + data[i],
+                                  data=[resp_opcode] + data_row,
                                   extended_id=False)
                 kwp_resp_seq = (kwp_resp_seq + 1) & 0xf
                 send(msg)
