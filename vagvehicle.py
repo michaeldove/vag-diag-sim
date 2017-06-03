@@ -2,6 +2,7 @@ from __future__ import print_function
 import struct
 import time
 import can
+from scale import *
 
 ENGINE_CONTROLLER = 0x01 # more likely open controller
 CONTROLLER_IDENT_REQ = 0x1f
@@ -29,43 +30,17 @@ KWP_MEASURING_BLOCK_1 = 0x02
 KWP_MEASURING_BLOCK_20 = 0x14
 KWP_MEASURING_BLOCK_115 = 0x73
 
-RPM_SCALE_FACTOR = 40
-INJECTION_TIMING_SCALE_FACTOR = 255 # usecs / 255
 UNIT_PERCENT = 0x21
 UNIT_PERCENT_2 = 0x17
 UNIT_DEGREES = 0x22
 UNIT_MS = 0x16
 UNIT_GS = 0x19
-LOAD_PRESCALER = 0x85
-RPM_PRESCALER = 0xc8
-INJECTION_TIMING_PRESCALER = 0xff
-MAF_PRESCALER = 0x02
 
 remote_arbitration_id = None
 controller = None
 kwp_resp_seq = 0
 
 bus = can.interface.Bus(channel='slcan0', bustype='socketcan')
-
-# See VAG-Blocks Github project for scaling
-def scale_rpm(rpm):
-    return min(rpm / RPM_SCALE_FACTOR, 0xff)
-
-def scale_injection_timing(timing):
-    return [INJECTION_TIMING_SCALE_FACTOR, min(
-        int(round(timing / float(INJECTION_TIMING_SCALE_FACTOR))),
-        0xff)]
-
-def scale_load(load):
-    return [LOAD_PRESCALER, min(
-        int(round(load / (100.0/LOAD_PRESCALER))),
-        0xff)]
-
-def scale_maf(maf):
-    return [MAF_PRESCALER, min(
-        int(round(maf / (100.0/MAF_PRESCALER))),
-        0xff)]
-
 
 
 def send(message):
